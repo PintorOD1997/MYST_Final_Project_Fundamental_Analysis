@@ -9,4 +9,31 @@
 # -- --------------------------------------------------------------------------------------------------- -- #
 """
 
-dict_test = {'key_a': 'a', 'key_b': 'b'}
+
+import pandas as pd 
+
+fileA = "files/PIB_Eur_Historico.csv"
+fileB = "files/EURUSD_Data.csv"
+
+
+def toDF(file: str = None) -> True:
+    """
+    Open as pandas DataFrame function
+    This function opens a csv file using its provided filename as a pandas DataFrame
+
+    Parameters
+    ----------
+    file (str) : Filename
+
+    Returns
+    -------
+    df : csv file as DataFrame
+    """
+
+    df = pd.read_csv(file)
+    df.set_index(pd.to_datetime(df["timestamp"]),inplace=True)
+    df.drop(columns="timestamp",inplace=True)
+    
+    return df
+dfA = toDF(fileA)
+dfB = toDF(fileB)

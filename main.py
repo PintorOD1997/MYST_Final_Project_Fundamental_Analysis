@@ -9,40 +9,105 @@
 # -- --------------------------------------------------------------------------------------------------- -- #
 """
 
-import pandas as pd
+from regex import I
 import data as dt
+import numpy as np
+import functions as ft
+import pandas as pd
+
+"""
+
+Creación de Previo para trading
+
+Evalúo el escenario, luego que?
+
+"""
 
 # -- TEST 1 : 
-# verify that the script is being read
-print(dt.dict_test)
+#Datraframe testing
 
-# -- TEST 2 :
-# verify that installed pandas module works correctly
-df_dict_test = pd.DataFrame(dt.dict_test, index=[0, 1])
-print(df_dict_test)
+currency_df = dt.dfB
+gdp_df = dt.dfA
 
-# -- TEST 3 :
-# verify you can use plotly and visualize plots in jupyter notebook
+# Obtención de timestamps para comparación
 
-import chart_studio.plotly as py   # various tools (jupyter offline print)
-import plotly.graph_objects as go  # plotting engine
+pares = ft.pares(gdp_df)
+    
+# Elaboración de los dataframes de 60 renglones
 
-# example data
-df = pd.DataFrame({'column_a': [1, 2, 3, 4, 5], 'column_b': [1, 2, 3, 4, 5]})
-# basic plotly plot
-data = [go.Bar(x=df['column_a'], y=df['column_b'])]
-# instruction to view it inside jupyter
-py.iplot(data, filename='jupyter-basic_bar')
-# (alternatively) instruction to view it in web app of plotly
-py.plot(data)
+dic = ft.trading_history(gdp_df,currency_df
+                         ,pares)
 
-# -- TEST 4 :
-# verify you can use plotly and visualize plots in web browser locally
+# Funciones de escenarios de ocurrencia
+# Se le alimenta el df del gdp
 
-import plotly.io as pio            # to define input-output of plots
-pio.renderers.default = "browser"  # to render the plot locally in your default web browser
+escenarios = ft.escenarios_ocurrencia(gdp_df)
 
-# basic plotly plot
-plot_data = go.Figure(go.Bar(x=df['column_a'], y=df['column_b']))
-# instruction to view it in specified render (in this case browser)
-plot_data.show()
+# Métricas para escenarios
+
+y = ft.pip_Metrics(escenarios,dic)
+
+df_decisiones = pd.DataFrame({
+    "Escenario" : ["A","B","C","D"],
+    "Operación" : ["Compra","Venta","Compra","Venta"],
+    "Stop Loss" :  [50,50,50,50], 
+    "Take Profit" : [150,150,150,150],
+    "Volumen" : [10000,5000,500,1000]
+}) 
+    
+# Optimización y backtest
+
+
+def backtest(escenarios,metricas):
+    cash = 100000
+    df_backtest = pd.DataFrame()
+    df_backtest.index = escenarios.index
+    df_backtest["Escenario"] = escenarios["Escenario"]
+    op = []
+    for i in range(len(escenarios)):
+        if df_backtest.iloc[i,0] == "A" or df_backtest.iloc[i,0] == "C":
+            op.append("Compra")
+        else:
+            op.append("Venta")
+    df_backtest["Operación"] = op
+    vol = []
+    res = []
+    pips = []
+    cap = []
+    acm = []
+    for i in range(len(escenarios)):
+        if df_backtest["Operación"][i] == "Compra":
+            vol.append(100)
+        else: 
+            vol.append(50)
+        if (metricas["Pips Alcistas"][i]-metricas["Pips Bajistas"][i])>0 and op[i] == "Compra":
+            res.append("ganada")
+        elif (metricas["Pips Alcistas"][i]-metricas["Pips Bajistas"][i])<0 and op[i] == "Venta":
+            res.append("ganada")
+        else: 
+            res.append("perdida")
+        pips.append(
+            (metricas["Pips Alcistas"][i]-metricas["Pips Bajistas"][i])
+        )
+        cap.append(
+            pips[i]*vol[i]
+        )
+        if res[i] == "perdida":
+            cap[i] = cap[i]*-1
+        cash += cap[i]
+        acm.append(cash)
+    df_backtest["Volumen"] = vol
+    df_backtest["Resultado"] = res
+    df_backtest["Pips"] = pips
+    df_backtest["Capital"] = cap
+    df_backtest["Capital Acumulado"] = acm
+    df_backtest["Capital Acumulado"].astype(int)
+    return df_backtest
+
+
+
+backtest_df = backtest(escenarios,y)
+            
+
+
+
