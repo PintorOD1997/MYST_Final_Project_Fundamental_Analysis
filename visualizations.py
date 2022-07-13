@@ -10,7 +10,9 @@
 """
   
 import plotly.io as pio
-import plotly.graph_objects as go 
+import plotly.graph_objects as go
+import pandas as pd 
+import numpy as np
 
 def backtest_evolution_chart(backtest_df : pd.DataFrame = None, title : str = None):
     fig = go.Figure(
