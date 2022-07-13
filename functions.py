@@ -12,6 +12,19 @@
 import data as dt
 import numpy as np
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+#pip install pingouin
+import pingouin as pg
+import seaborn as sns
+import pylab
+from scipy.stats import shapiro
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+
 
 def pares(df: pd.DataFrame = None) -> True:
     """
@@ -131,3 +144,116 @@ def pip_Metrics(df : pd.DataFrame,price : pd.DataFrame):
     out["Pips Bajistas"] = pip_baj
     out["Volatilidad"] = vol
     return out
+
+# VISUALIZACIÓN DATOS ORIGINALES:
+def visualizacion(data_PIB):
+    # x axis values
+    x = data_PIB["FECHA"]
+    # corresponding y axis values
+    y = data_PIB["ACTUAL"]  
+    # plotting the points 
+    plt.plot(x, y, color='green', linestyle='dashed', linewidth = 3,
+         marker='o', markerfacecolor='blue', markersize=5)
+    # naming the x axis
+    plt.xlabel("Periodo")
+    # naming the y axis
+    plt.ylabel('PIB actual eurozona') 
+    # giving a title to my graph
+    plt.title('PIB EUROZONA') 
+    # function to show the plot
+    plt.show()
+
+# AGREGAR COLUMNA PARA HACER PROMEDIO MOVIL
+dt.data_PIB.insert(2, "Promedio móvil", "") 
+# rellenar columna:
+dt.data_PIB['Promedio móvil']=dt.data_PIB['ACTUAL'].rolling(window=3).mean().shift(-1)
+
+# VISUALIZACIÓN CON PROMEDIO MÓVIL: 
+def visualizacion2(data_PIB):
+    # x axis values
+    x2 = data_PIB["FECHA"]
+    # corresponding y axis values
+    y2 = data_PIB["Promedio móvil"]  
+    # plotting the points 
+    plt.plot(x2, y2, color='green', linestyle='dashed', linewidth = 3,
+             marker='o', markerfacecolor='blue', markersize=5)
+    # naming the x axis
+    plt.xlabel("Periodo")
+    # naming the y axis
+    plt.ylabel('Promedio móvil') 
+    # giving a title to my graph
+    plt.title('DATOS CON PROMEDIO MÓVIL 3 PERIODOS') 
+    # function to show the plot
+    plt.show()
+
+# COMPARACIÓN:
+# datos con y sin promedio móvil
+def visualizacion3(data_PIB):
+    X = data_PIB["FECHA"]  
+    # Assign variables to the y axis part of the curve
+    y = data_PIB["ACTUAL"]  
+    z = data_PIB["Promedio móvil"]   
+    # Plotting both the curves simultaneously
+    plt.plot(X, y, color='b',lw=3, label='datos sin promedio móvil')
+    plt.plot(X, z, color='g',lw=3, label='datos con promedio móvil') 
+    # Naming the x-axis, y-axis and the whole graph
+    plt.xlabel("Periodo")
+    plt.ylabel("PIB actual Eurozona")
+    plt.title("Comparación con y sin promedio móvil") 
+    # Adding legend, which helps us recognize the curve according to it's color
+    plt.legend() 
+    # To load the display window
+    plt.show()
+
+# Revisar correlación 
+data2 = dt.data_PIB[["FECHA","Promedio móvil"]]
+data2=data2.drop([0,26])
+#coeficiente de correlación de Pearson
+correlacion =data2.corr()
+#correlación spearman
+correlacion_spearman=stats.spearmanr(data2["FECHA"],data2["Promedio móvil"])
+
+# agregamos una columa extra para hacer la correlacion parcial
+# usando un desplazamiento para tener la informacion de un periodo pasado en c/u
+data2.insert(2, "Shift", "") 
+data2['Shift']=data2['Promedio móvil'].shift(1)
+data22 = data2.drop([1])
+correlacion_parcial=pg.partial_corr(data=data22, x='FECHA', y='Promedio móvil', covar='Shift')
+correlacion_parcial2=data22.pcorr().round(3)
+
+#
+# PRUEBA PARA SABER SI TIENE Homocedasticidad o Heterocedasticidad
+# FLIGNER TEST
+# ==============================================================================
+data3=dt.data_PIB.drop([0,26])
+fligner_test = stats.fligner(data3["FECHA"], data3["Promedio móvil"], center='median')
+
+# PRUEBA PARA SABER SI TIENE Homocedasticidad o Heterocedasticidad
+# Levene test
+# ==============================================================================
+levene_test = stats.levene(data3["FECHA"], data3["Promedio móvil"], center='median')
+
+# PRUEBA PARA SABER SI TIENE Homocedasticidad o Heterocedasticidad
+# Bartlett test
+# ==============================================================================
+bartlett_test = stats.bartlett(data3["FECHA"], data3["Promedio móvil"])
+
+# prueba grafica de normalidad
+def visualizacion4(data3):    
+    stats.probplot(data3["Promedio móvil"],dist="norm",plot=pylab)
+    pylab.show()
+
+#Comprobamos normalidad con la prueba de Shapiro- Wilk
+shapiro_test=shapiro(data3["Promedio móvil"])
+
+# MODELO POLINOMIAL GRADO 
+def polinomio(data3):
+    x_model = np.array(data3["FECHA"]).reshape((-1, 1))
+    y_model = np.array(data3["Promedio móvil"])
+    x_ = PolynomialFeatures(degree=9, include_bias=False).fit_transform(x_model)
+    model = LinearRegression().fit(x_, y_model)
+
+    r_sq = model.score(x_, y_model)
+    print(f"coefficient of determination: {r_sq}")
+    print(f"intercept: {model.intercept_}")
+    print(f"coefficients: {model.coef_}")

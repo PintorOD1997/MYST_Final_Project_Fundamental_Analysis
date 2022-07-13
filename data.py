@@ -12,7 +12,7 @@
 
 import pandas as pd 
 
-fileA = "files/PIB_Eur_Historico.csv"
+fileA = "files/PIB_EUROZONA.csv"
 fileB = "files/EURUSD_Data.csv"
 
 
@@ -37,3 +37,5 @@ def toDF(file: str = None) -> True:
     return df
 dfA = toDF(fileA)
 dfB = toDF(fileB)
+
+data_PIB = pd.read_csv("PIB_EUROZONA.csv",index_col=None)
