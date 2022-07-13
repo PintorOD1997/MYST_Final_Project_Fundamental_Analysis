@@ -9,7 +9,6 @@
 # -- --------------------------------------------------------------------------------------------------- -- #
 """
 
-from regex import I
 import data as dt
 import numpy as np
 import functions as ft
@@ -58,55 +57,18 @@ df_decisiones = pd.DataFrame({
 # Optimización y backtest
 
 
-def backtest(escenarios,metricas):
-    cash = 100000
-    df_backtest = pd.DataFrame()
-    df_backtest.index = escenarios.index
-    df_backtest["Escenario"] = escenarios["Escenario"]
-    op = []
-    for i in range(len(escenarios)):
-        if df_backtest.iloc[i,0] == "A" or df_backtest.iloc[i,0] == "C":
-            op.append("Compra")
-        else:
-            op.append("Venta")
-    df_backtest["Operación"] = op
-    vol = []
-    res = []
-    pips = []
-    cap = []
-    acm = []
-    for i in range(len(escenarios)):
-        if df_backtest["Operación"][i] == "Compra":
-            vol.append(100)
-        else: 
-            vol.append(50)
-        if (metricas["Pips Alcistas"][i]-metricas["Pips Bajistas"][i])>0 and op[i] == "Compra":
-            res.append("ganada")
-        elif (metricas["Pips Alcistas"][i]-metricas["Pips Bajistas"][i])<0 and op[i] == "Venta":
-            res.append("ganada")
-        else: 
-            res.append("perdida")
-        pips.append(
-            (metricas["Pips Alcistas"][i]-metricas["Pips Bajistas"][i])
-        )
-        cap.append(
-            pips[i]*vol[i]
-        )
-        if res[i] == "perdida":
-            cap[i] = cap[i]*-1
-        cash += cap[i]
-        acm.append(cash)
-    df_backtest["Volumen"] = vol
-    df_backtest["Resultado"] = res
-    df_backtest["Pips"] = pips
-    df_backtest["Capital"] = cap
-    df_backtest["Capital Acumulado"] = acm
-    df_backtest["Capital Acumulado"].astype(int)
-    return df_backtest
+
+backtest_df = ft.backtest(escenarios,y)
+test,val = ft.segmentar(backtest_df)
+perf_test = ft.performance(test)
+perf_val = ft.performance(val)
+    
+  
 
 
 
-backtest_df = backtest(escenarios,y)
+
+
             
 
 

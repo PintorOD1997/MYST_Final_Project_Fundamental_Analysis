@@ -27,7 +27,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+PSO_TESTING.py
 # Distribution / packaging
 .Python
 build/

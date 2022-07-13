@@ -145,6 +145,102 @@ def pip_Metrics(df : pd.DataFrame,price : pd.DataFrame):
     out["Volatilidad"] = vol
     return out
 
+def backtest(escenarios : pd.DataFrame,metricas : pd.DataFrame,C : int = None, V : int = None):
+    cash = 100000
+    df_backtest = pd.DataFrame()
+    df_backtest.index = escenarios.index
+    df_backtest["Escenario"] = escenarios["Escenario"]
+    op = []
+    for i in range(len(escenarios)):
+        if df_backtest.iloc[i,0] == "A" or df_backtest.iloc[i,0] == "C":
+            op.append("Compra")
+        else:
+            op.append("Venta")
+    df_backtest["Operación"] = op
+    vol = []
+    res = []
+    pips = []
+    cap = []
+    acm = []
+    for i in range(len(escenarios)):
+        if df_backtest["Operación"][i] == "Compra":
+            vol.append(C)
+        else: 
+            vol.append(V)
+        if (metricas["Pips Alcistas"][i]-metricas["Pips Bajistas"][i])>0 and op[i] == "Compra":
+            res.append("ganada")
+        elif (metricas["Pips Alcistas"][i]-metricas["Pips Bajistas"][i])<0 and op[i] == "Venta":
+            res.append("ganada")
+        else: 
+            res.append("perdida")
+        pips.append(
+            (metricas["Pips Alcistas"][i]-metricas["Pips Bajistas"][i])
+        )
+        cap.append(
+            pips[i]*vol[i]
+        )
+        if res[i] == "perdida":
+            cap[i] = cap[i]*-1
+        cash += cap[i]
+        acm.append(cash)
+    df_backtest["Volumen"] = vol
+    df_backtest["Resultado"] = res
+    df_backtest["Pips"] = pips
+    df_backtest["Capital"] = cap
+    df_backtest["Capital Acumulado"] = acm
+    df_backtest["Capital Acumulado"].astype(int)
+    return df_backtest
+
+def performance(backtest_df : pd.DataFrame = None):
+    """
+    Evaluación de desempeño de la estrategia
+    
+    Regresa un dataframe con métricas de desempeño de la estrategia implementada.
+    Recibe un dataframe en el que los resultados de la inversión sean dados.
+    Medidas de desempeño:
+    Ratio de éxito : de todas las veces que se implementó la estrategia, cuántos fueron exitosos
+    Retorno de capital : basado en el capital con el que se inicia, en cuánto crecio el mismo
+    Promedio ganancias : promedio de los rendimientos obtenidos
+    Desvest ganancias : Volatilidad de los rendimientos obtenidos
+    
+    Returns
+    
+    per_df : Dataframe con el performance del dataframe evaluado.
+    
+    """
+    succ_ratio = np.array([backtest_df.Resultado == "ganada"]).sum()/len(backtest_df)*100
+    ov = (backtest_df["Capital Acumulado"][0] - backtest_df["Capital"][0])
+    cv = backtest_df["Capital Acumulado"][-1]
+    roe = (cv-ov)/ov*100
+    pct = np.array(backtest_df["Capital"]/ov)
+    ret_mean = pct.mean()
+    ret_desv = pct.std()
+    per_df = pd.DataFrame(
+        {
+            "Ratio Éxtio (%)" : succ_ratio,
+            "Retorno de Capital (%)" : roe,
+            "Promedio Ganancias (%)" : ret_mean*100,
+            "Volatilidad Ganancias (%)" : ret_desv*100
+        },
+        index = range(1)
+    )
+    return per_df
+
+def segmentar(df: pd.DataFrame, p : float = 0.8):
+    """
+    Segmentador de DataFrames
+    Esta función segmenta dataframes en el porcentaje provisto
+    Default: 80% - 20% (Test - Validación)
+    
+    RETURNS
+    dfTest: Dataframe 80%
+    dfVal : Dataframe 20%
+    
+    """
+    dfTest = df.iloc[0:int(len(df)*p)]
+    dfVal = df.iloc[int(len(df)*p)+1:-1]
+    return dfTest,dfVal
+
 # VISUALIZACIÓN DATOS ORIGINALES:
 def visualizacion(data_PIB):
     # x axis values
@@ -257,3 +353,6 @@ def polinomio(data3):
     print(f"coefficient of determination: {r_sq}")
     print(f"intercept: {model.intercept_}")
     print(f"coefficients: {model.coef_}")
+
+
+
