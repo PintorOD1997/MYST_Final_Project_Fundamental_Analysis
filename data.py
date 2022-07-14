@@ -38,4 +38,4 @@ def toDF(file: str = None) -> True:
 dfA = toDF(fileA)
 dfB = toDF(fileB)
 
-data_PIB = pd.read_csv("PIB_EUROZONA.csv",index_col=None)
+data_PIB = pd.read_csv("files/PIB_EUROZONA_Landa.csv",index_col=None)
