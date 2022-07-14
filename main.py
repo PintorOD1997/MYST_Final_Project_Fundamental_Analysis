@@ -27,7 +27,7 @@ Evalúo el escenario, luego que?
 
 currency_df = dt.dfB
 gdp_df = dt.dfA
-
+gdp_df = gdp_df.sort_index()
 # Obtención de timestamps para comparación
 
 pares = ft.pares(gdp_df)
@@ -46,6 +46,7 @@ escenarios = ft.escenarios_ocurrencia(gdp_df)
 
 y = ft.pip_Metrics(escenarios,dic)
 
+
 df_decisiones = pd.DataFrame({
     "Escenario" : ["A","B","C","D"],
     "Operación" : ["Compra","Venta","Compra","Venta"],
@@ -58,18 +59,19 @@ df_decisiones = pd.DataFrame({
 
 
 
-backtest_df = ft.backtest(escenarios,y)
+backtest_df = ft.backtest(escenarios,y,50,10)
+
+
 test,val = ft.segmentar(backtest_df)
 perf_test = ft.performance(test)
 perf_val = ft.performance(val)
     
-  
 
 
+# Visualizacioens 
 
-
-
-            
-
+import visualizations as vis
+vis.backtest_evolution_chart(test,"Strategy Test")
+vis.backtest_strat_result(test,"Strategy Test")
 
 
